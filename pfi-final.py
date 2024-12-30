@@ -1,5 +1,29 @@
+import sqlite3
 inventario = {}
 contador_index=1
+#CREAR BASE DE DATOS Y LA TABLA DE PRODUCTOS.
+
+def inicio_BBDD():
+    conn = sqlite3.connect("C:\\Users\\Omar\\Documents\\GitHub\\integradorFinal-Python\\inventario.db")
+    cursor= conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS productos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT UNIQUE,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            cantidad    INTEGER NOT NULL CHECK(cantidad >= 0),
+            precio  REAL NOT NULL CHECK(precio > 0),
+            categoria TEXT
+        )               
+                   
+    ''')
+    
+    conn.commit()
+    conn.close()
+    
+# inicio_BBDD()
 
 def mostrar_menu():
     print("")
@@ -14,12 +38,12 @@ def mostrar_menu():
     print("0- Salir")
     
 def registrar_producto():
-    global contador_index
+    
     print("\n Registro de producto nuevos")
 
     nombre = input("Ingrese el nombre del producto:").strip()
     descripcion = input("Ingrese la descripcion del producto:")
-
+    
     #Validacion precio
     while True:
         try:
@@ -42,19 +66,37 @@ def registrar_producto():
             print("Entrada inválida, ingrese un valor mayor o igual que cero")
     
     categoria = input("Ingrese la categoría del producto").strip()
-
-    #Registro de los productos detallados en el inventario/diccionario
-
-    inventario[f"{contador_index}"]={
-        "nombre" : nombre,
-        "descripcion" : descripcion,
-        "cantidad" : cantidad,
-        "precio" : precio,
-        "categoria" : categoria
-    }
-    print(f"el producto fue generado con exito, Codigo Asignado: Producto-{contador_index}")
-    contador_index += 1
     
+    conn = sqlite3.connect("C:\\Users\\Omar\\Documents\\GitHub\\integradorFinal-Python\\inventario.db")
+    cursor= conn.cursor()
+    
+    try:
+        cursor.execute('''
+        INSERT INTOO productos (
+            codigo,
+            nombre ,
+            descripcion,
+            cantidad ,
+            precio ,
+            categoria 
+        )
+        VALUES(NULL, ?,?,?,?,?)               
+                   
+    ''', (nombre, descripcion, cantidad, precio, categoria))
+        id_producto =cursor.lastrowid
+        codigo = f"PROD{id_producto}"
+        
+        cursor.execute(''' 
+        UPDATE productos SET codigo = ? WHERE id = ? 
+        ''', (codigo, id_producto))
+        conn.commit()
+        print(f"Registro exitoso, codigo asignado: {codigo}")
+    
+    except sqlite3.IntegrityError:
+        print("No se pudo registrar")
+    finally:
+        conn.close()
+        
 def mostrar_productos():
     print("\n Listado de productos")
 
@@ -155,6 +197,7 @@ def buscar_producto():
     else:
         print(f"El codigo {codigo} no existe")
         
+
 def reporte_bajo_stock():
     print("\n Reporte bajo stock")
 
@@ -186,39 +229,45 @@ def reporte_bajo_stock():
             print(f"precio       : {datos["precio"]}")
             print(f"categoria    : {datos["categoria"]}")
             print(f"- -"*50)
-            
-#EJECUCION PROGRAMA PRINCIPAL
-while True:  
-    mostrar_menu()
+        
+#PROGRAMA PRINCIPAL
+
+if __name__ == "__main__":
+    inicio_BBDD()
+    while True:
+        mostrar_menu()
+        
+        try:
+            opcion = int(input("Ingrese una opción del 1 - 6 || 0(cero) para salir "))
+
+            if opcion == 0:
+                print("Salir")
+                break
+
+            elif opcion == 1:
+                registrar_producto()
+
+            elif opcion == 2:
+                mostrar_productos()
+                
+            elif opcion == 3:
+                print("3-Actualizacion-")
+                actualizar_productos()
+                
+            elif opcion == 4:
+                print("4-Eliminacion-")
+                eliminar_producto()
+                
+            elif opcion == 5:
+                print("5-Listado-")
+                buscar_producto()
+            elif opcion == 6:
+                print("6-Reporte Bajo Stock-")
+                reporte_bajo_stock()
+            else:
+                print("Ingrese un valor valido entre  1 - 6 || 0(cero) para salir ")
+        except ValueError:
+            print("ingrese un valor numerico valido")
     
-    try:
-        opcion = int(input("Ingrese una opción del 1 - 6 || 0(cero) para salir "))
-
-        if opcion == 0:
-            print("Salir")
-            break
-
-        elif opcion == 1:
-           registrar_producto()
-
-        elif opcion == 2:
-            mostrar_productos()
-            
-        elif opcion == 3:
-            print("3-Actualizacion-")
-            actualizar_productos()
-            
-        elif opcion == 4:
-            print("4-Eliminacion-")
-            eliminar_producto()
-            
-        elif opcion == 5:
-            print("5-Listado-")
-            buscar_producto()
-        elif opcion == 6:
-            print("6-Reporte Bajo Stock-")
-            reporte_bajo_stock()
-        else:
-            print("Ingrese un valor valido entre  1 - 6 || 0(cero) para salir ")
-    except ValueError:
-        print("ingrese un valor numerico valido")
+    
+    
